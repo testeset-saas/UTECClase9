@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberRange - Laboratorio Avanzado de Acceso Remoto v2.5</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'SF Mono', 'Courier New', monospace;
+            background: #0a0c10;
+            color: #c0c5ce;
+            margin: 0;
+            padding: 20px;
+        }
+        .container { max-width: 1600px; margin: 0 auto; }
+        .header {
+            background: linear-gradient(135deg, #0f1117 0%, #1a1d26 100%);
+            border-bottom: 2px solid #2c3e66;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { margin: 0; color: #5c9eff; font-size: 1.8em; }
+        .header .sub { color: #65737e; font-size: 0.85em; margin-top: 5px; }
+        .status-bar {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            background: #0d0f14;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 0.8em;
+            border: 1px solid #2a2e3a;
+        }
+        .status-item { display: flex; align-items: center; gap: 8px; }
+        .led { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .led-green { background: #2ecc71; box-shadow: 0 0 5px #2ecc71; animation: pulse 2s infinite; }
+        .led-yellow { background: #f1c40f; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        .grid-2col {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(550px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: #0f1117;
+            border: 1px solid #2a2e3a;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .card:hover { border-color: #3a4a6a; }
+        .card-header {
+            background: #151a22;
+            padding: 12px 16px;
+            border-bottom: 1px solid #2a2e3a;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .card-header h3 { margin: 0; font-size: 1.1em; color: #7aa2f7; }
+        .card-body { padding: 16px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        
+        .terminal-log {
+            background: #07090e;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.75em;
+            height: 220px;
+            overflow-y: auto;
+            border: 1px solid #1e222d;
+            margin-top: 10px;
+        }
+        .log-line {
+            padding: 3px 0;
+            border-left: 3px solid transparent;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .log-line.info { border-left-color: #3b82f6; color: #9eb3d4; }
+        .log-line.success { border-left-color: #10b981; color: #6ee7b7; }
+        .log-line.warning { border-left-color: #f59e0b; color: #fcd34d; }
+        .log-line.error { border-left-color: #ef4444; color: #fca5a5; }
+        .log-line.attack { border-left-color: #ec489a; color: #f9a8d4; background: rgba(236,72,153,0.05); }
+        
+        .btn {
+            background: #1e2433;
+            border: 1px solid #3a4a6a;
+            color: #c0c5ce;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s;
+            margin: 4px;
+        }
+        .btn:hover { background: #2c3e66; border-color: #5c9eff; color: white; }
+        .btn-primary { background: #2c3e66; border-color: #5c9eff; }
+        .btn-danger { border-color: #e74c3c; background: rgba(231,76,60,0.1); }
+        .btn-danger:hover { background: #e74c3c; color: white; }
+        .btn-success { border-color: #10b981; background: rgba(16,185,129,0.1); }
+        .btn-success:hover { background: #10b981; color: white; }
+        
+        .risk-meter {
+            background: #07090e;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .risk-bar {
+            height: 8px;
+            background: #1e2433;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .risk-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+            background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444, #ec489a);
+        }
+        .badge {
+            background: #1e2433;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7em;
+            border: 1px solid #3a4a6a;
+        }
+        .network-map {
+            background: #07090e;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 0.75em;
+            margin-top: 12px;
+            border: 1px solid #1e222d;
+        }
+        select {
+            background: #1e2433;
+            border: 1px solid #3a4a6a;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.8em;
+        }
+        .flex-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 6px 0;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .timestamp { color: #5c9eff; }
+        .alert-banner {
+            background: rgba(239,68,68,0.15);
+            border: 1px solid #ef4444;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 12px;
+            font-size: 0.75em;
+            display: none;
+        }
+        .instructor-panel {
+            background: #111520;
+            border: 1px dashed #4a5a80;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    
+    <div class="header">
+        <div>
+            <h1>🔐 CyberRange - Access Remote Lab & Incident Response</h1>
+            <div class="sub">Entorno de Simulación Avanzada | Alineado a NIST SP 800-207 y MITRE ATT&CK Framework</div>
+        </div>
+        <button class="btn btn-success" onclick="generateLabReport()">📊 Exportar Reporte de Práctica</button>
+    </div>
+
+    <div class="status-bar">
+        <div class="status-item"><span class="led led-green"></span>SIEM Wazuh: ACTIVE</div>
+        <div class="status-item"><span class="led led-green"></span>SOAR Core: CONNECTED</div>
+        <div class="status-item"><span class="led led-green"></span>ZTNA Gateway: ONLINE</div>
+        <div class="status-item"><span class="led led-green"></span>RADIUS/MFA Engine: OK</div>
+        <div class="status-item"><span class="led led-green"></span>Device Trust CA: ENFORCING</div>
+        <div class="status-item"> Acciones Evaluadas: <span id="score-counter" class="badge" style="background:#2c3e66">0</span></div>
+    </div>
+
+    <div class="grid-2col">
+        
+        <div class="card">
+            <div class="card-header">
+                <h3>🌐 Escenario 1: Robustez de Protocolos VPN</h3>
+                <span class="badge">MITRE: TA0001 (Initial Access)</span>
+            </div>
+            <div class="card-body">
+                <div>
+                    <p style="margin:0 0 10px 0; font-size:0.8em; color:#85929E;">Evalúa cómo impacta la elección del protocolo y el segundo factor ante ataques automatizados.</p>
+                    <div class="flex-row">
+                        <label>Protocolo:</label>
+                        <select id="vpn-protocol">
+                            <option value="legacy-pptp">PPTP (Inseguro - MS-CHAPv2)</option>
+                            <option value="ssl-anyconnect">SSL VPN (AnyConnect TLS 1.2)</option>
+                            <option value="wireguard">WireGuard v1 (Crypto-routing)</option>
+                        </select>
+                    </div>
+                    <div class="flex-row">
+                        <label>MFA Config:</label>
+                        <select id="vpn-mfa">
+                            <option value="none">Sin MFA (Solo Clave)</option>
+                            <option value="totp">TOTP (Google Authenticator)</option>
+                            <option value="push">Push Clásico (Duo/Okta)</option>
+                            <option value="fido2">FIDO2 / WebAuthn (Passkey Corp)</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="executeVPNEvaluation()">🔌 Desplegar y Conectar Tunel</button>
+                </div>
+                <div id="vpn-real-log" class="terminal-log">
+                    <div class="log-line info">[RADIUS-SRV] Esperando peticiones de autenticación en puerto 1812...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>📱 Escenario 2: Simulación de MFA Fatigue vs Adversary-in-the-Middle</h3>
+                <span class="badge">Técnica: T1621 / T1539</span>
+            </div>
+            <div class="card-body">
+                <div>
+                    <p style="margin:0 0 10px 0; font-size:0.8em; color:#85929E;">Lanza vectores de elusión de MFA para analizar logs forenses de autenticación.</p>
+                    <div class="flex-row">
+                        <button class="btn btn-danger" onclick="triggerMFAFatigueAttack()">💣 Simular Fatiga (Push Spam)</button>
+                        <button class="btn btn-danger" onclick="triggerAitMAttack()">🎣 Simular Robo de Sesión (AitM/Evilginx)</button>
+                    </div>
+                    <div class="flex-row" style="margin-top:10px;">
+                        <button class="btn btn-success" onclick="applyNumberMatching()">🛡️ Activar Number Matching</button>
+                        <button class="btn btn-success" onclick="applyFidoEnforcement()">🛡️ Forzar Llaves FIDO2 Hardware</button>
+                    </div>
+                </div>
+                <div id="mfa-real-log" class="terminal-log">
+                    <div class="log-line info">[MFA-PROXY] Control plane escuchando telemetría...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>🖥️ Escenario 3: Posture Check Forense (NIST Compliance)</h3>
+                <span class="badge">NIST SP 800-207 / CIS Controls</span>
+            </div>
+            <div class="card-body">
+                <div>
+                    <div class="flex-row"><span>🛡️ Certificado de Dispositivo Corp (PKI):</span><select id="pc-pki"><option value="no">❌ No instalado / Autofirmado</option><option value="yes">✅ Válido (Entidad Certificadora Interna)</option></select></div>
+                    <div class="flex-row"><span>🔧 Agente EDR / XDR Status:</span><select id="pc-edr"><option value="none">❌ Deshabilitado / Sin Agente</option><option value="running">✅ Activo & Connected (SentinelOne)</option></select></div>
+                    <div class="flex-row"><span>💾 Línea Base de Parches:</span><select id="pc-patch"><option value="missing">❌ Vulnerable (CVE-2025-21345 - RCE Altamente Crítico)</option><option value="ok">✅ Totalmente Parcheado</option></select></div>
+                    <div class="flex-row"><span>🌍 Reputación de IP de Origen:</span><select id="pc-ip-rep"><option value="clean">✅ IP Residencial/Corporativa Limpia</option><option value="tor">💀 Nodo de Salida TOR Detectado</option></select></div>
+                    <button class="btn btn-primary" onclick="evaluateDevicePosture()" style="width:100%; margin-top:10px;">🔍 Auditar e Interrogar Endpoint</button>
+                </div>
+                <div id="posture-real-log" class="terminal-log">
+                    <div class="log-line info">[Posture Engine] Dispuesto para evaluar postura según directivas corporativas.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>🎯 Escenario 4: Motor de Políticas ZTNA vs VPN Tradicional</h3>
+                <span class="badge">Principio de Menor Privilegio</span>
+            </div>
+            <div class="card-body">
+                <div>
+                    <div class="flex-row">
+                        <span>👤 Identidad Evaluada:</span>
+                        <select id="ztna-user" onchange="updateZTNAMapContext()">
+                            <option value="user">carlos.gomez@empresa.com (Finanzas - Rol Estándar)</option>
+                            <option value="admin">sofia.zavala@empresa.com (Ingeniería DevOps - Cuenta Privilegiada)</option>
+                            <option value="vendor">external.support@terceros.net (Soporte Externo - Proveedor)</option>
+                        </select>
+                    </div>
+                    <div class="flex-row" style="margin-top:10px;">
+                        <button class="btn btn-primary" onclick="testZTNAEnforcement()">🚀 Probar Acceso por ZTNA Microsegmentado</button>
+                        <button class="btn btn-danger" onclick="testLegacyVPNEnforcement()">🏚️ Probar Acceso por VPN Tradicional</button>
+                    </div>
+                </div>
+                <div id="ztna-real-log" class="terminal-log" style="height: 130px;">
+                    <div class="log-line info">[ZTNA-Proxy] Conectado al PEP (Policy Enforcement Point)...</div>
+                </div>
+                <div id="network-map" class="network-map">
+                    🏢 <strong>TOPOLOGÍA CORPORATIVA:</strong> Seleccione un usuario para mapear los segmentos de red disponibles bajo Zero Trust.
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="grid-column: span 2;">
+            <div class="card-header">
+                <h3>📡 Escenario 5: Consola Forense Wazuh (SIEM) e Invocación de Playbooks SOAR</h3>
+                <span class="badge">MITRE D3FEND / Incident Response</span>
+            </div>
+            <div class="card-body">
+                <p style="margin:0 0 10px 0; font-size:0.85em; color:#a4b0be;">Simula alertas reales correlacionadas por el SIEM. Actúa de forma automatizada o manual antes de que se complete el Ransomware.</p>
+                <div class="grid-2col" style="grid-template-columns: 1fr 1fr; gap:15px;">
+                    <div>
+                        <strong style="font-size:0.8em; color:#7aa2f7;">Ataques Disponibles:</strong><br>
+                        <button class="btn btn-danger" onclick="triggerBruteForceSIEM()">🔨 Fuerza Bruta RDP Extensiva (EventID 4625)</button>
+                        <button class="btn btn-danger" onclick="triggerImpossibleTravelSIEM()">🌍 Anomalía de Geovelocidad (Imposible Travel)</button>
+                        <button class="btn btn-danger" onclick="triggerLateralMovementSIEM()">🔄 Movimiento Lateral Activo (PsExec/WMI)</button>
+                    </div>
+                    <div style="border-left: 1px solid #2a2e3a; padding-left: 15px;">
+                        <strong style="font-size:0.8em; color:#10b981;">Acciones del Analista SOC (Mitigación):</strong><br>
+                        <button class="btn btn-success" onclick="mitigateSOARAction('isolate')">🔒 SOAR: Aislar Host de la Red (Isolate Endpoint)</button>
+                        <button class="btn btn-success" onclick="mitigateSOARAction('revoke')">🔑 SOAR: Revocar Todas las Sesiones Activas en EntraID</button>
+                        <button class="btn btn-success" onclick="mitigateSOARAction('block-ip')">🚫 SOAR: Banear IP Atacante en Firewall Perimetral</button>
+                    </div>
+                </div>
+                
+                <div id="siem-real-log" class="terminal-log" style="height: 180px;">
+                    <div class="log-line success">[Wazuh-Manager] Decoders cargados con éxito. Eventos indexándose en tiempo real...</div>
+                </div>
+                
+                <div class="risk-meter">
+                    <div class="flex-row">
+                        <span>📊 <strong>Indicador de Compromiso - Nivel de Riesgo Corporativo:</strong></span>
+                        <span id="risk-label" class="badge" style="background:#10b981; color:white;">BAJO</span>
+                    </div>
+                    <div class="risk-bar" style="margin-top:5px;"><div id="risk-fill-real" class="risk-fill" style="width: 0%"></div></div>
+                </div>
+                <div id="auto-response" class="alert-banner"></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // ========== HISTORIAL Y MÉTRICAS ACADÉMICAS ==========
+    let academicActionsCount = 0;
+    let registeredLogsForReport = [];
+    let currentRisk = 0;
+    let currentActiveThreat = null; 
+
+    function trackAction() {
+        academicActionsCount++;
+        document.getElementById('score-counter').innerText = academicActionsCount;
+    }
+
+    function logReportEvent(scenario, action, result) {
+        registeredLogsForReport.push({
+            timestamp: new Date().toISOString(),
+            scenario: scenario,
+            action: action,
+            result: result
+        });
+    }
+
+    function getTimestamp() {
+        return new Date().toISOString().replace('T', ' ').substring(0, 19);
+    }
+    
+    function addLog(container, message, type) {
+        const logDiv = document.getElementById(container);
+        if (!logDiv) return;
+        const line = document.createElement('div');
+        line.className = 'log-line ' + (type || 'info');
+        line.innerHTML = '<span class="timestamp">[' + getTimestamp() + ']</span> ' + message;
+        logDiv.appendChild(line);
+        logDiv.scrollTop = logDiv.scrollHeight;
+    }
+    
+    function clearLog(container) {
+        const logDiv = document.getElementById(container);
+        if (logDiv) logDiv.innerHTML = '';
+    }
+    
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function updateRiskMeter(level) {
+        currentRisk = Math.min(100, Math.max(0, level));
+        const fill = document.getElementById('risk-fill-real');
+        const label = document.getElementById('risk-label');
+        if (fill) fill.style.width = currentRisk + '%';
+        if (label) {
+            label.innerText = currentRisk > 75 ? 'CRÍTICO' : currentRisk > 45 ? 'ALTO' : currentRisk > 15 ? 'MEDIO' : 'BAJO';
+            label.style.background = currentRisk > 75 ? '#ef4444' : currentRisk > 45 ? '#f59e0b' : currentRisk > 15 ? '#3b82f6' : '#10b981';
+        }
+    }
+
+    // ========== ESCENARIO 1: VPN EVALUATION ==========
+    window.executeVPNEvaluation = async function() {
+        const logId = 'vpn-real-log';
+        const protocol = document.getElementById('vpn-protocol').value;
+        const mfa = document.getElementById('vpn-mfa').value;
+        
+        clearLog(logId);
+        trackAction();
+        
+        addLog(logId, `[VPN-GW] Inicializando túnel usando driver: ${protocol.toUpperCase()}`, 'info');
+        await sleep(400);
+        
+        if (protocol === 'legacy-pptp') {
+            addLog(logId, '[VULN] Alerta: PPTP utiliza cifrado MPPE obsoleto y MS-CHAPv2 propenso a cracking offline', 'warning');
+            await sleep(300);
+        }
+
+        addLog(logId, '[RADIUS] Handshake primario completado. Solicitando validación IAM...', 'info');
+        await sleep(400);
+
+        if (mfa === 'none') {
+            addLog(logId, '[SECURITY-ALERT] Acceso otorgado basándose únicamente en conocimiento de password.', 'warning');
+            if (protocol === 'legacy-pptp') {
+                addLog(logId, '💥 DETECCION: Ataque de Password Spray exitoso por IP maliciosa.', 'attack');
+                addLog(logId, '💀 INCIDENTE: Credenciales extraídas. Atacante inyectó payload en LAN.', 'error');
+                logReportEvent('Escenario 1', 'Despliegue PPTP sin MFA', 'Compromiso Total por Fuerza Bruta / Protocolo Inseguro');
+            } else {
+                addLog(logId, '⚠️ Tunel establecido. Riesgo alto de bypass si la credencial es robada por Phishing.', 'warning');
+                logReportEvent('Escenario 1', 'SSL/Wireguard sin MFA', 'Establecido pero vulnerable a suplantación simple');
+            }
+        } else if (mfa === 'totp' || mfa === 'push') {
+            addLog(logId, `[MFA-SRV] Segundo Factor Requerido (${mfa.toUpperCase()}). Esperando confirmación...`, 'info');
+            await sleep(500);
+            addLog(logId, '✅ Autenticación de doble factor verificada correctamente.', 'success');
+            addLog(logId, '🔒 Conexión segura establecida. IP asignada del pool corporativo: 10.10.100.45', 'success');
+            logReportEvent('Escenario 1', `Conectado via ${protocol} con ${mfa}`, 'Conexión Exitosa con Seguridad Estándar');
+        } else if (mfa === 'fido2') {
+            addLog(logId, '[MFA-FIDO] Negociando desafío criptográfico WebAuthn con Llave de Hardware...', 'success');
+            await sleep(400);
+            addLog(logId, '🔒 FIDO2 Token firmado con éxito. Criptográficamente inmune a ataques AitM (Phishing-Resistant).', 'success');
+            logReportEvent('Escenario 1', `Wireguard/SSL con FIDO2`, 'Máxima Robustez de Acceso Remoto');
+        }
+    };
+
+    // ========== ESCENARIO 2: MFA ATTACKS & MITIGATIONS ==========
+    window.triggerMFAFatigueAttack = async function() {
+        const logId = 'mfa-real-log';
+        clearLog(logId);
+        trackAction();
+        
+        addLog(logId, '🔥 [MITRE T1621] Ataque de Fatiga de MFA detectado desde IP 45.147.230.10 (Exit Node TOR)', 'attack');
+        addLog(logId, '[INFO] El atacante tiene la contraseña legítima (robada previamente por InfoStealer)', 'warning');
+        
+        for(let i=1; i<=4; i++) {
+            await sleep(300);
+            addLog(logId, `🚨 Push de autenticación masivo #${i} enviado al celular corporativo del Director General...`, 'warning');
+        }
+        await sleep(400);
+        addLog(logId, '❌ [HUMAN-FACTOR] El usuario final presionó "Aprobar" tras recibir múltiples alertas repetitivas de noche.', 'error');
+        addLog(logId, '💀 COMPROMISO DETECTADO: El atacante eludió el MFA e ingresó a la consola del Portal Interno.', 'attack');
+        updateRiskMeter(60);
+        logReportEvent('Escenario 2', 'Ataque Fatiga MFA', 'Bypass Exitoso debido al factor humano');
+    };
+
+    window.triggerAitMAttack = async function() {
+        const logId = 'mfa-real-log';
+        clearLog(logId);
+        trackAction();
+        
+        addLog(logId, '🔥 [MITRE T1539] Intrusión mediante proxy reverso (Adversary-in-the-Middle - Evilginx sim)', 'attack');
+        addLog(logId, '[VECT] El usuario accedió a un clon de inicio de sesión idéntico a Microsoft365', 'warning');
+        await sleep(500);
+        addLog(logId, '⚠️ [MFA-BYPASS] El usuario introdujo su código TOTP legítimo en la web falsa.', 'warning');
+        await sleep(400);
+        addLog(logId, '🩸 [ALERTA FORENSE] El proxy capturó e interceptó el HEADER "Set-Cookie" (Session Token)', 'error');
+        addLog(logId, '💀 SESION SECUESTRADA: Atacante inyectó la cookie en su navegador bypasséando usuario, clave y MFA TOTP.', 'attack');
+        updateRiskMeter(80);
+        logReportEvent('Escenario 2', 'Ataque AitM Phishing', 'Sesión comprometida (El MFA tradicional no frena robo de tokens)');
+    };
+
+    window.applyNumberMatching = function() {
+        const logId = 'mfa-real-log';
+        trackAction();
+        addLog(logId, '🛡️ [CONFIG-SOAP] Directiva de Control de Acceso Actualizada: Enforzando Number Matching.', 'success');
+        addLog(logId, '💡 CONTROL: Ahora el usuario debe ver un número aleatorio en pantalla e ingresarlo en la App Duo/Okta.', 'info');
+        addLog(logId, '✅ Mitigación Exitosa: Los ataques automatizados de Fatiga quedan anulados al 100%.', 'success');
+        updateRiskMeter(currentRisk - 25);
+        logReportEvent('Escenario 2', 'Mitigación: Number Matching', 'Inmunidad ante fatiga de notificaciones');
+    };
+
+    window.applyFidoEnforcement = function() {
+        const logId = 'mfa-real-log';
+        trackAction();
+        addLog(logId, '🛡️ [ZERO-TRUST-ENFORCEMENT] Forzando autenticación Phishing-Resistant (Passkeys/FIDO2).', 'success');
+        addLog(logId, '✅ Mitigación Total: El robo de sesión mediante proxies reversos tradicionales (AitM) falla dado que la firma de hardware está atada estrictamente al dominio DNS real.', 'success');
+        updateRiskMeter(0);
+        logReportEvent('Escenario 2', 'Mitigación: FIDO2 Hardware', 'Mitigación definitiva frente a Phishing Avanzado e interceptación');
+    };
+
+    // ========== ESCENARIO 3: POSTURE CHECK ==========
+    window.evaluateDevicePosture = async function() {
+        const logId = 'posture-real-log';
+        const pki = document.getElementById('pc-pki').value;
+        const edr = document.getElementById('pc-edr').value;
+        const patch = document.getElementById('pc-patch').value;
+        const ipRep = document.getElementById('pc-ip-rep').value;
+        
+        clearLog(logId);
+        trackAction();
+        
+        addLog(logId, '[Posture Control] Consultando variables WMI e inspección de red remota...', 'info');
+        await sleep(400);
+
+        let systemCompliant = true;
+
+        if (pki === 'no') {
+            addLog(logId, '❌ ALERTA [NIST SP 800-207]: El dispositivo no cuenta con un certificado corporativo de confianza emitido por la CA de la organización.', 'error');
+            systemCompliant = false;
+        } else {
+            addLog(logId, '✅ Certificado Organizacional presente en el almacén de hardware TPM.', 'success');
+        }
+
+        if (edr === 'none') {
+            addLog(logId, '❌ ALERTA [CIS Control 8]: Ningún sensor XDR o agente de telemetría de comportamiento está en ejecución.', 'error');
+            systemCompliant = false;
+        } else {
+            addLog(logId, '✅ Sensor EDR SentinelOne reportando telemetría e integridad limpia.', 'success');
+        }
+
+        if (patch === 'missing') {
+            addLog(logId, '❌ ALERTA VULNERABILIDAD: Detectado parche ausente crítico para CVE-2025-21345.', 'error');
+            systemCompliant = false;
+        } else {
+            addLog(logId, '✅ Línea base de parches del sistema operativo al día.', 'success');
+        }
+
+        if (ipRep === 'tor') {
+            addLog(logId, '💀 DETECCIÓN CONTEXTUAL: La solicitud proviene de una dirección asociada a redes de anonimización (TOR Network). Risk Score incrementado.', 'attack');
+            systemCompliant = false;
+        }
+
+        await sleep(300);
+        if (systemCompliant) {
+            addLog(logId, '🟢 DISPOSITIVO COMPLIANT: El Policy Decision Point (PDP) otorga el token de acceso seguro.', 'success');
+            logReportEvent('Escenario 3', 'Auditoría de Postura', 'Aprobado - Cumple todas las directivas de cumplimiento corporativo');
+        } else {
+            addLog(logId, '🔴 DISPOSITIVO NON-COMPLIANT: Acceso Remoto Bloqueado automáticamente por el Gateway.', 'error');
+            addLog(logId, '[AUTOMATIZACIÓN] Ticket de remediación asignado al área de HelpDesk.', 'info');
+            logReportEvent('Escenario 3', 'Auditoría de Postura', 'Denegado - El host no cumple la línea base de seguridad');
+        }
+    };
+
+    // ========== ESCENARIO 4: ZTNA CONTEXT MAP ==========
+    const networkContextData = {
+        user: {
+            logs: ['[Policy Engine] Evaluando rol Financiero.', '🔓 Permitido únicamente reenvío TLS hacia ERP (Port 443).', '🔒 Acceso a servidores SSH de desarrollo y LAN bloqueado (Políticas ZTNA estricta).'],
+            map: '🎯 <strong>MODO ZERO TRUST ENFORCED (Rol Estándar - Financiero)</strong><br>✅ Hacia: [10.10.20.5 ERP-Financiero via Reverse Proxy HTTPS]<br>❌ Aislado por completo del resto del segmento LAN interna corporativa.'
+        },
+        admin: {
+            logs: ['[Policy Engine] Cuenta privilegiada detectada.', '🔓 Concediendo túnel seguro efímero a subred de infraestructura (10.10.30.0/24).', '⚠️ Grabación de sesión SSH iniciada automáticamente con fines de auditoría.'],
+            map: '🔧 <strong>MODO ZERO TRUST ENFORCED (Rol Administración DevOps)</strong><br>✅ Hacia: [10.10.30.0/24 Infraestructura de Producción]<br>🔒 Resto de servidores y aplicaciones financieras fuera del rango de visibilidad.'
+        },
+        vendor: {
+            logs: ['[Policy Engine] Validando política para Proveedor Externo.', '⏳ Ventana horaria de mantenimiento activa (Expira en 4 horas).', '🔓 Permitido únicamente acceso por navegador al portal de asistencia técnica interna.'],
+            map: '📦 <strong>MODO ZERO TRUST ENFORCED (Proveedor Externo)</strong><br>✅ Acceso exclusivo a: Portal Soporte Web Externo<br>⏱️ Restricción temporal estricta: Expiración automática y revocación a las 17:00.'
+        }
+    };
+
+    window.updateZTNAMapContext = function() {
+        const user = document.getElementById('ztna-user').value;
+        document.getElementById('network-map').innerHTML = `🏢 <strong>CONTEXTO DE RED EDITADO:</strong> El simulador está cargado con los privilegios de <u>${user}</u>. Ejecute las pruebas para ver el mapa lógico adaptativo.`;
+    };
+
+    window.testZTNAEnforcement = async function() {
+        const logId = 'ztna-real-log';
+        const user = document.getElementById('ztna-user').value;
+        clearLog(logId);
+        trackAction();
+
+        addLog(logId, '[ZTNA] Validando Contexto del usuario mediante Identity Provider...', 'info');
+        await sleep(300);
+
+        networkContextData[user].logs.forEach(msg => {
+            addLog(logId, msg, msg.includes('Permitido') || msg.includes('TPM') ? 'success' : msg.includes('🔒') || msg.includes('bloqueado') ? 'error' : 'info');
+        });
+
+        document.getElementById('network-map').innerHTML = networkContextData[user].map;
+        logReportEvent('Escenario 4', `Acceso ZTNA para ${user}`, 'Exitoso - Principio de menor privilegio e hiper-segmentación aplicados');
+    };
+
+    window.testLegacyVPNEnforcement = async function() {
+        const logId = 'ztna-real-log';
+        clearLog(logId);
+        trackAction();
+
+        addLog(logId, '⚠️ [VPN TRADICIONAL] Conectando endpoint al concentrador perimetral...', 'warning');
+        await sleep(400);
+        addLog(logId, '🔓 [RED PLANA] Asignada IP corporativa directa (10.10.100.50) con máscara /16.', 'warning');
+        addLog(logId, '🔥 ALERTA DE ARQUITECTURA: El host remoto tiene visibilidad ICMP/SMB directa sobre TODO el Datacenter.', 'warning');
+        addLog(logId, '💀 RIESGO CRÍTICO: Si el equipo remoto sufre un compromiso, toda la LAN interna es vulnerable a escaneos y movimientos laterales.', 'error');
+        
+        document.getElementById('network-map').innerHTML = '🏚️ <strong>MODO ARQUITECTURA TRADICIONAL (PERÍMETRO)</strong><br>🔓 Acceso irrestricto a: 10.10.20.5 (ERP), 10.10.10.10 (FileServer), 10.10.30.0 (Servidores Críticos).<br>💀 <span style="color:#ef4444; font-weight:bold;">AMENAZA:</span> El perímetro falló. Movimiento lateral sin control interno.';
+        logReportEvent('Escenario 4', 'Prueba VPN Tradicional Plana', 'Riesgo Crítico - Visibilidad corporativa total sin microsegmentación');
+    };
+
+    // ========== ESCENARIO 5: SIEM & SOAR INCIDENT RESPONSE ==========
+    window.triggerBruteForceSIEM = async function() {
+        const logId = 'siem-real-log';
+        clearLog(logId);
+        currentActiveThreat = 'bruteforce';
+        updateRiskMeter(45);
+        
+        addLog(logId, '🚨 [Wazuh-Event] Correlación de logs de Active Directory. EventID: 4625 (Logon Failure).', 'warning');
+        for (let i = 1; i <= 6; i++) {
+            await sleep(150);
+            addLog(logId, `[Audit] Fallo secuencial en intento de inicio de sesión de cuenta 'Admin-TI' desde IP externa 198.51.100.87`, 'warning');
+        }
+        addLog(logId, '💥 [ALERTA REGLA 5712] Fuerza bruta RDP en curso. Umbral superado (>30 peticiones/min).', 'error');
+        addLog(logId, '[SOAR-INFO] Esperando acción del analista o ejecución de playbook...', 'info');
+    };
+
+    window.triggerImpossibleTravelSIEM = async function() {
+        const logId = 'siem-real-log';
+        clearLog(logId);
+        currentActiveThreat = 'impossible_travel';
+        updateRiskMeter(55);
+
+        addLog(logId, '🚨 [Wazuh-Event] Azure AD Identity Protection log recibido.', 'warning');
+        await sleep(300);
+        addLog(logId, '🌐 Autenticación Exitosa: Usuario carlos.gomez@empresa.com desde IP San Salvador, El Salvador.', 'success');
+        await sleep(400);
+        addLog(logId, '✈️ [ANOMALÍA] Autenticación Exitosa paralela: Cuenta carlos.gomez@empresa.com desde IP Moscú, Rusia.', 'attack');
+        addLog(logId, '💥 [ALERTA REGLA 81023] Riesgo Crítico: Geovelocidad Imposible detectada (Diferencia de 10,000 km en 4 minutos).', 'error');
+    };
+
+    window.triggerLateralMovementSIEM = async function() {
+        const logId = 'siem-real-log';
+        clearLog(logId);
+        currentActiveThreat = 'lateral_movement';
+        updateRiskMeter(85);
+
+        addLog(logId, '🚨 [Wazuh-Sysmon] EventID 1: Creación de proceso anómalo en Endpoint de Contabilidad (10.10.10.15).', 'attack');
+        await sleep(300);
+        addLog(logId, '⚠️ Ejecución remota detectada: cmd.exe ejecutando script malicioso via PsExec desde host comprometido.', 'attack');
+        await sleep(300);
+        addLog(logId, '🔥 [MITRE T1003] Intento de volcado de LSASS en memoria para robo de hashes NTLM.', 'error');
+        addLog(logId, '💀 CRÍTICO: Ransomware propagándose. Detectado comando "vssadmin.exe delete shadows" para borrar respaldos locales.', 'error');
+    };
+
+    window.mitigateSOARAction = async function(actionType) {
+        const logId = 'siem-real-log';
+        const banner = document.getElementById('auto-response');
+        trackAction();
+
+        if (!currentActiveThreat) {
+            addLog(logId, '[SOAR] No hay amenazas activas en cola para mitigar en este momento.', 'info');
+            return;
+        }
+
+        banner.style.display = 'block';
+        
+        if (actionType === 'isolate') {
+            addLog(logId, '⚡ [SOAR-PLAYBOOK] Comando de Aislamiento de Red enviado remotamente al agente de SentinelOne.', 'info');
+            await sleep(400);
+            addLog(logId, '✅ Host comprometido aislado de la red de manera lógica. Todo el tráfico local de entrada y salida bloqueado, excepto la conexión segura con el SOC.', 'success');
+            banner.innerHTML = '🛡️ ACCIÓN ANALISTA SOC: Endpoint comprometido aislado de la red por completo.';
+            if (currentActiveThreat === 'lateral_movement') updateRiskMeter(20);
+        } 
+        else if (actionType === 'revoke') {
+            addLog(logId, '⚡ [SOAR-PLAYBOOK] Invocando Graph API hacia EntraID (Azure AD).', 'info');
+            await sleep(400);
+            addLog(logId, '✅ Todas las sesiones activas, tokens de refresco y cookies web para la cuenta afectada han sido invalidados de inmediato.', 'success');
+            banner.innerHTML = '🛡️ ACCIÓN ANALISTA SOC: Sesiones de usuario revocadas forzando reautenticación estricta.';
+            if (currentActiveThreat === 'impossible_travel') updateRiskMeter(10);
+        } 
+        else if (actionType === 'block-ip') {
+            addLog(logId, '⚡ [SOAR-PLAYBOOK] Conectando por API externa a Firewalls Perimetrales.', 'info');
+            await sleep(400);
+            addLog(logId, '✅ Regla de bloqueo de tráfico explícita (Drop/Deny) añadida a la tabla perimetral del Firewall.', 'success');
+            banner.innerHTML = '🛡️ ACCIÓN ANALISTA SOC: Dirección IP origen del atacante baneada en el perímetro.';
+            if (currentActiveThreat === 'bruteforce') updateRiskMeter(5);
+        }
+
+        logReportEvent('Escenario 5 - SIEM/SOAR', `Mitigación Ejecutada: ${actionType}`, `Amenaza ${currentActiveThreat} neutralizada con éxito`);
+        currentActiveThreat = null; 
+        setTimeout(() => { banner.style.display = 'none'; }, 5000);
+    };
+
+    // ========== INSTRUCTOR REPORT GENERATOR ==========
+    window.generateLabReport = function() {
+        if (registeredLogsForReport.length === 0) {
+            alert('Aviso: El alumno no ha interactuado ni ejecutado ninguna acción o simulación aún. No hay telemetría de laboratorio para reportar.');
+            return;
+        }
+
+        let reportContent = `========================================================\n`;
+        reportContent += `📜 REPORTES DE EVIDENCIA DE LABORATORIO - CYBERRANGE SOC\n`;
+        reportContent += `Fecha y Hora de Emisión: ${new Date().toLocaleString()}\n`;
+        reportContent += `Estado de Finalización del Estudiante: COMPLETADO\n`;
+        reportContent += `Total de Acciones Técnicas Evaluadas: ${academicActionsCount}\n`;
+        reportContent += `========================================================\n\n`;
+
+        registeredLogsForReport.forEach((evt, idx) => {
+            reportContent += `[Acción #${idx + 1}] - Escenario: ${evt.scenario}\n`;
+            reportContent += `├─ Acción ejecutada: ${evt.action}\n`;
+            reportContent += `└─ Resultado forense: ${evt.result}\n`;
+            reportContent += `--------------------------------------------------------\n`;
+        });
+
+        reportContent += `\nFin del documento de telemetría académica. Entorno CyberRange verificado.`;
+
+        const blob = new Blob([reportContent], { type: 'text/plain' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `CyberRange_Evidencia_Lab_${new Date().toISOString().substring(0,10)}.txt`;
+        link.click();
+    };
+</script>
+</body>
+</html>

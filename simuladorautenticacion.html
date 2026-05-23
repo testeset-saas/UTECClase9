@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Authentication Simulator Environment (AASE)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        .terminal-font { font-family: 'Courier New', Courier, monospace; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col">
+
+    <header class="bg-gray-800 border-b border-gray-700 p-4 shadow-lg">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold text-cyan-400 tracking-wider">AASE v1.0</h1>
+                <p class="text-xs text-gray-400">Advanced Authentication Simulator Environment | Expert Level</p>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span class="flex h-3 w-3 relative">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+                <span class="text-xs font-semibold text-gray-300 uppercase bg-gray-700 px-3 py-1 rounded">Entorno de Laboratorio Activo</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex-1 max-w-7xl w-full mx-auto p-4 grid grid-cols-1 md:grid-cols-4 gap-6">
+        
+        <aside class="md:col-span-1 bg-gray-800 p-4 rounded-xl border border-gray-700 h-fit space-y-3">
+            <h2 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Escenarios de Ataque</h2>
+            <button onclick="selectScenario(1)" id="btn-esc-1" class="w-full text-left p-3 rounded-lg bg-cyan-900/40 border border-cyan-500 text-cyan-300 font-medium transition text-sm">
+                1. MFA Fatigue (Push Bombing)
+            </button>
+            <button onclick="selectScenario(2)" id="btn-esc-2" class="w-full text-left p-3 rounded-lg bg-gray-700/30 border border-transparent text-gray-400 hover:bg-gray-700/50 transition text-sm">
+                2. AitM / Robo de Sesión (Evilginx)
+            </button>
+            <button onclick="selectScenario(3)" id="btn-esc-3" class="w-full text-left p-3 rounded-lg bg-gray-700/30 border border-transparent text-gray-400 hover:bg-gray-700/50 transition text-sm">
+                3. Password Spraying Distribuido
+            </button>
+            <button onclick="selectScenario(4)" id="btn-esc-4" class="w-full text-left p-3 rounded-lg bg-gray-700/30 border border-transparent text-gray-400 hover:bg-gray-700/50 transition text-sm">
+                4. Golden SAML (IdP Bypass)
+            </button>
+            <button onclick="selectScenario(5)" id="btn-esc-5" class="w-full text-left p-3 rounded-lg bg-gray-700/30 border border-transparent text-gray-400 hover:bg-gray-700/50 transition text-sm">
+                5. Pre-Auth Bypass (0-Day Edge)
+            </button>
+        </aside>
+
+        <main class="md:col-span-3 space-y-6">
+            
+            <section class="bg-gray-800 p-6 rounded-xl border border-gray-700 shadow-md">
+                <div class="flex justify-between items-start mb-4">
+                    <h2 id="scenario-title" class="text-2xl font-bold text-white">MFA Fatigue & Context Bypass</h2>
+                    <span id="mitre-tag" class="bg-red-900/60 text-red-300 border border-red-700 text-xs font-mono px-3 py-1 rounded">MITRE T1621</span>
+                </div>
+                <p id="scenario-description" class="text-gray-300 text-sm leading-relaxed mb-4">
+                    El atacante automatiza solicitudes Push repetitivas aprovechando credenciales válidas comprometidas para quebrar la resistencia psicológica del usuario y forzar la aprobación del segundo factor.
+                </p>
+                <div class="grid grid-cols-2 gap-4 text-xs border-t border-gray-700 pt-4">
+                    <div><span class="text-gray-500 font-semibold">Vector de Entrada:</span> <span id="vector-tag" class="text-gray-300">VPN Tradicional / Portal ZTNA</span></div>
+                    <div><span class="text-gray-500 font-semibold">Complejidad:</span> <span id="complexity-tag" class="text-amber-400">Baja</span></div>
+                </div>
+            </section>
+
+            <section class="bg-gray-950 rounded-xl border border-gray-800 overflow-hidden shadow-2xl">
+                <div class="bg-gray-900 px-4 py-2 flex justify-between items-center border-b border-gray-800">
+                    <span class="text-xs font-mono text-red-400 flex items-center gap-2">
+                        <span class="h-2 w-2 rounded-full bg-red-500 inline-block animate-pulse"></span> RED TEAM CONSOLE (ATTACK VECTOR)
+                    </span>
+                    <span class="text-xs text-gray-500 font-mono">root@kali:~#</span>
+                </div>
+                <div class="p-4 terminal-font text-xs space-y-3 h-48 overflow-y-auto bg-black text-green-400" id="red-terminal">
+                    <div>[i] Entorno listo para la emulación del ataque. Elige los parámetros ofensivos...</div>
+                </div>
+                <div class="p-4 bg-gray-900 border-t border-gray-800 flex justify-between items-center">
+                    <div class="text-xs text-gray-400" id="attack-status">Estado: Listo para ejecutar</div>
+                    <button onclick="executeAttack()" id="btn-attack" class="bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-2 rounded text-xs transition uppercase tracking-wider">
+                        Ejecutar Explotación
+                    </button>
+                </div>
+            </section>
+
+            <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <div class="lg:col-span-2 bg-gray-950 rounded-xl border border-gray-800 overflow-hidden flex flex-col shadow-xl">
+                    <div class="bg-gray-900 px-4 py-2 flex justify-between items-center border-b border-gray-800">
+                        <span class="text-xs font-mono text-blue-400 flex items-center gap-2">
+                            <span class="h-2 w-2 rounded-full bg-blue-500 inline-block"></span> SIEM LIVE INGESTION (WAZUH/ELASTIC)
+                        </span>
+                        <span class="text-xs text-gray-500 font-mono">JSON SIEM Stream</span>
+                    </div>
+                    <div class="p-4 terminal-font text-xs space-y-2 h-44 overflow-y-auto bg-gray-950 text-gray-400 flex-1" id="blue-terminal">
+                        <div class="text-gray-600">[i] Escuchando eventos perimetrales en puertos logísticos...</div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 flex flex-col justify-between shadow-md">
+                    <div>
+                        <h3 class="text-xs font-bold text-blue-400 uppercase tracking-wider mb-3">Mitigación de Ingeniería</h3>
+                        <p class="text-xs text-gray-400 mb-4">Selecciona el control de arquitectura o identidad adecuado para neutralizar permanentemente el vector simulado.</p>
+                        
+                        <div class="space-y-2" id="mitigation-options">
+                            </div>
+                    </div>
+                    
+                    <button onclick="applyMitigation()" id="btn-mitigate" disabled class="mt-4 w-full bg-gray-700 text-gray-500 font-bold px-4 py-2 rounded text-xs cursor-not-allowed uppercase tracking-wider transition">
+                        Aplicar Contramedida
+                    </button>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <footer class="bg-gray-950 border-t border-gray-800 p-3 mt-8 text-center text-xs text-gray-600">
+        AASE Framework 2026 - Diseñado para Capacitación Avanzada de Arquitectos SOC y Analistas de Respuesta a Incidentes.
+    </footer>
+
+    <script>
+        // Base de Datos de los Escenarios y Flujos
+        const scenarios = {
+            1: {
+                title: "MFA Fatigue & Context Bypass",
+                mitre: "MITRE T1621",
+                description: "El atacante inyecta una ráfaga automatizada de solicitudes Push de autenticación a través de la API del IdP corporativo. El script aprovecha credenciales válidas obtenidas previamente para quebrar el estado de alerta del usuario por agotamiento cognitivo.",
+                vector: "VPN Corporativa Expuesta / Broker ZTNA no adaptativo",
+                complexity: "Baja",
+                complexityColor: "text-green-400",
+                redLogs: [
+                    "[$] Iniciando script de automatización push_bombing.py",
+                    "[$] Credenciales de la víctima cargadas: j.doe@empresa.com:P@ssword2026",
+                    "[+] Intentando Login #1 -> MFA Push enviado al dispositivo móvil.",
+                    "[!] Respuesta: MFA Denegado por el usuario (Timeout). Reintentando inmediatamente...",
+                    "[+] Intentando Login #2 -> MFA Push enviado al dispositivo móvil.",
+                    "[!] Respuesta: MFA Denegado por el usuario. Reintentando...",
+                    "[+] Intentando Login #14 -> MFA Push enviado al dispositivo móvil.",
+                    "[Aviso] El objetivo lleva 14 solicitudes consecutivas a las 02:40 AM.",
+                    "[CRÍTICO] ¡SESIÓN APROBADA! El usuario presionó 'Aceptar' en el dispositivo móvil.",
+                    "[$] Acceso concedido. Token de autenticación guardado. Descargando datos confidenciales..."
+                ],
+                blueLogs: [
+                    '{"timestamp": "2026-05-23T02:40:01Z", "event": "Login_Attempt", "user": "j.doe", "status": "MFA_Challenged", "ip": "185.220.101.4"}',
+                    '{"timestamp": "2026-05-23T02:40:04Z", "event": "MFA_Response", "user": "j.doe", "status": "DENIED", "reason": "User_Timeout"}',
+                    '{"timestamp": "2026-05-23T02:40:05Z", "event": "Login_Attempt", "user": "j.doe", "status": "MFA_Challenged", "ip": "185.220.101.4"}',
+                    '{"timestamp": "2026-05-23T02:40:45Z", "event": "Alert", "severity": "MEDIUM", "msg": "Múltiples solicitudes MFA en menos de 60 segundos para el usuario j.doe"}',
+                    '{"timestamp": "2026-05-23T02:41:12Z", "event": "MFA_Response", "user": "j.doe", "status": "SUCCESS", "method": "Push_Notification"}',
+                    '{"timestamp": "2026-05-23T02:41:13Z", "event": "Login_Success", "user": "j.doe", "ip": "185.220.101.4", "risk_score": "CRITICAL"}'
+                ],
+                mitigations: [
+                    { id: "m1_wrong", text: "Aumentar la complejidad de la contraseña a 16 caracteres." },
+                    { id: "m1_correct", text: "Implementar MFA Number Matching (Coincidencia de Números) + Contexto de Ubicación." }
+                ],
+                successDefense: "¡Excelente! Al requerir Number Matching, el atacante automatizado no puede adivinar el número mostrado en la pantalla de inicio de sesión de la víctima, neutralizando el bombardeo push por completo."
+            },
+            2: {
+                title: "Adversary-in-the-Middle (AitM) con Evilginx",
+                mitre: "MITRE T1539",
+                description: "El atacante despliega un proxy inverso (Evilginx) que intercepta el tráfico HTTP en tiempo real entre el usuario corporativo y el Proveedor de Identidad (IdP). Captura las credenciales y el token/cookie de sesión una vez completado el MFA legítimo.",
+                vector: "Interfaces de Login basadas en Web expuestas (OAuth2 / SAML)",
+                complexity: "Alta",
+                complexityColor: "text-red-400",
+                redLogs: [
+                    "[$] Inicializando Evilginx3 en dominio proxy: login.empresa-segura.com",
+                    "[i] Phishlet de Keycloak / EntraID configurado y activo.",
+                    "[i] Esperando conexiones en el URI de phishing...",
+                    "[+] Víctima conectada desde IP corporativa legítima.",
+                    "[i] Capturando keystrokes... Usuario: admin@empresa.com | Pass: M@sterKey2026",
+                    "[i] Proxying MFA OTP al IdP real... Esperando validación del usuario.",
+                    "[+] ¡MFA validado por el usuario real en su dispositivo!",
+                    "[CRÍTICO] Capturando cookies de sesión de producción de forma transparente.",
+                    "[+] COOKIE EXTRACTADA: 'idp_session_token=eyJhbGciOiJSUzI1Ni...'",
+                    "[$] Clonando cookie en entorno del atacante. Acceso de administrador total garantizado sin contraseña."
+                ],
+                blueLogs: [
+                    '{"timestamp": "2026-05-23T03:12:22Z", "event": "Token_Issued", "user": "admin@empresa.com", "browser": "Chrome/Linux"}',
+                    '{"timestamp": "2026-05-23T03:13:05Z", "event": "Resource_Access", "user": "admin@empresa.com", "ip": "45.132.22.89", "alert": "Discrepancia detectada: Mismo token de sesión utilizado por IPs geográficamente distantes simultáneamente."}'
+                ],
+                mitigations: [
+                    { id: "m2_correct", text: "Migrar a Autenticación resistente al Phishing (FIDO2 / Passkeys / WebAuthn)." },
+                    { id: "m2_wrong", text: "Reducir el tiempo de expiración del código OTP de 60 a 30 segundos." }
+                ],
+                successDefense: "¡Brillante decisión! La criptografía de FIDO2 enlaza el origen del dominio (`login.empresa.com`) con la llave de seguridad física/TPM. Si el dominio es el del atacante (`login.empresa-segura.com`), el navegador web se niega a firmar el reto criptográfico."
+            },
+            3: {
+                title: "Password Spraying Distribución Rotativa",
+                mitre: "MITRE T1110.003",
+                description: "Ejecución de un ataque de fuerza bruta horizontal de baja intensidad. Se prueba una única contraseña común contra cientos de cuentas corporativas de forma secuencial y rotando IPs origen para evadir las alertas de umbral de bloqueos del directorio activo corporativo.",
+                vector: "Endpoints VPN tradicionales públicos (IKEv2/AnyConnect) / API de IdP",
+                complexity: "Media",
+                complexityColor: "text-amber-400",
+                redLogs: [
+                    "[$] Cargando diccionario de 500 usuarios corporativos identificados por OSINT.",
+                    "[$] Configurando password estática para el ciclo: 'Mayo2026!'",
+                    "[$] Levantando red de proxy rotativa (100 nodos IP limpios públicos).",
+                    "[+] Lanzando ráfaga iterativa: 1 intento por usuario cada 20 minutos.",
+                    "[-] usuario1@empresa.com -> Fallido (Contraseña incorrecta)",
+                    "[-] usuario2@empresa.com -> Fallido (Contraseña incorrecta)",
+                    "[+] usuario114@empresa.com -> ¡LOGIN CORRECTO! Credencial válida encontrada.",
+                    "[$] Cuenta comprometida antes de activar alertas por bloqueo de políticas."
+                ],
+                blueLogs: [
+                    '{"timestamp": "2026-05-23T04:00:10Z", "event": "Auth_Failed", "user": "user1", "ip": "190.45.2.1"}',
+                    '{"timestamp": "2026-05-23T04:01:15Z", "event": "Auth_Failed", "user": "user2", "ip": "84.22.105.14"}',
+                    '{"timestamp": "2026-05-23T04:20:22Z", "event": "Auth_Success", "user": "user114", "ip": "201.12.99.3"}',
+                    '{"timestamp": "2026-05-23T04:30:00Z", "event": "Correlation_Engine", "status": "ANOMALY", "msg": "Detección de firmas idénticas de error de autenticación cruzadas en el tenant corporativo."}'
+                ],
+                mitigations: [
+                    { id: "m3_wrong", text: "Implementar bloqueo definitivo de la IP de origen tras 3 intentos erróneos." },
+                    { id: "m3_correct", text: "Habilitar Smart Lockout / Protección en la nube adaptativa con análisis de comportamiento pre-autenticación." }
+                ],
+                successDefense: "¡Correcto! Las soluciones modernas como Microsoft Entra Smart Lockout o Keycloak adaptativo bloquean la cuenta basándose en firmas heurísticas globales y el contexto del comportamiento del usuario, frustrando el ataque antes de verificar la contraseña."
+            },
+            4: {
+                title: "Falsificación de Aserciones SAML (Golden SAML)",
+                mitre: "MITRE T1606.002",
+                description: "Vulneración avanzada de la confianza de federación de la empresa. Habiendo comprometido previamente la llave privada de firma de tokens (Token-Signing Certificate) del IdP, el atacante forja un token SAML modificado fuera de la red que la pasarela ZTNA aceptará ciegamente.",
+                vector: "Federaciones SAML 2.0 / OIDC de soluciones ZTNA e IdP locales mal configurados",
+                complexity: "Alta",
+                complexityColor: "text-red-400",
+                redLogs: [
+                    "[$] Cargando Llave Privada de Firma exfiltrada: 'idp_signing.key'",
+                    "[$] Construyendo aserción SAML XML fraudulenta...",
+                    "[i] Modificando atributos: NameID='ceo@empresa.com', Roles='Global_Admin'",
+                    "[i] Extendiendo validez del token criptográfico por 365 días.",
+                    "[$] Firmando digitalmente la aserción con la llave privada robada.",
+                    "[+] Enviando aserción SAML firmada directamente al Endpoint ACS del Broker ZTNA.",
+                    "[CRÍTICO] ZTNA valida la firma criptográfica legítima. Acceso total concedido al perímetro protegido sin interactuar jamás con el IdP central."
+                ],
+                blueLogs: [
+                    '{"timestamp": "2026-05-23T05:00:12Z", "component": "ZTNA_Gateway", "event": "SAML_Validation", "status": "SUCCESS", "user": "ceo@empresa.com"}',
+                    '{"timestamp": "2026-05-23T05:00:15Z", "component": "SIEM_SIFT", "ALERT": "CRITICAL_ANOMALY", "msg": "Se detectó acceso exitoso vía SAML en el ZTNA, pero NO EXISTE log de solicitud ni emisión de token en el servidor de Identidad (IdP). Firma clásica de ataque Golden SAML."}'
+                ],
+                mitigations: [
+                    { id: "m4_correct", text: "Implementar rotación automatizada de certificados criptográficos en HSM y auditoría asincrónica estricta IdP vs ZTNA." },
+                    { id: "m4_wrong", text: "Deshabilitar el protocolo SAML e implementar túneles IPsec tradicionales punto a punto." }
+                ],
+                successDefense: "¡Excelente análisis! Al proteger las llaves de firma dentro de un Hardware Security Module (HSM) o soluciones KMS nativas en la nube inaccesibles, e integrar auditorías que verifiquen la correlación exacta entre tokens emitidos y tokens consumidos, neutralizas el bypass."
+            },
+            5: {
+                title: "Pre-Auth Bypass (Vulnerabilidad de Día Cero)",
+                mitre: "MITRE T1190",
+                description: "El atacante aprovecha una vulnerabilidad crítica de omisión de autenticación (ej. Path Traversal o Inyección de parámetros) expuesta directamente en la interfaz pública del dispositivo de seguridad perimetral para evadir por completo los mecanismos internos de validación de identidad corporativa.",
+                vector: "Dispositivos físicos/virtuales de VPN tradicionales y pasarelas perimetrales desactualizadas",
+                complexity: "Alta",
+                complexityColor: "text-red-400",
+                redLogs: [
+                    "[$] Escaneando IP pública perimetral: 200.45.12.5",
+                    "[i] Detectado servicio expuesto vulnerable a omisión de sesión remota previa.",
+                    "[$] Inyectando payload HTTP estructurado manipulando cabeceras de reescritura de URL.",
+                    "[+] Payload enviado: GET /remote/login?bypass=../../api/internal/session_bypass HTTP/1.1",
+                    "[CRÍTICO] Respuesta del servidor: HTTP/1.1 200 OK (Rol de Administración inyectado en memoria corporativa)",
+                    "[$] Abriendo sesión remota interactiva en consola bash perimetral. Evasión de identidad 100% exitosa."
+                ],
+                blueLogs: [
+                    '{"timestamp": "2026-05-23T06:15:00Z", "component": "Edge_Firewall", "event": "HTTP_Request", "uri": "/remote/login?bypass=../../", "status": "200"}',
+                    '{"timestamp": "2026-05-23T06:15:02Z", "component": "IDS_Internal", "ALERT": "HIGH", "msg": "Detectado patrón de Path Traversal web interactivo hacia subprocesos críticos del firmware perimetral."}'
+                ],
+                mitigations: [
+                    { id: "m5_wrong", text: "Instalar un antivirus robusto dentro de las estaciones de los usuarios finales." },
+                    { id: "m5_correct", text: "Migrar a una arquitectura ZTNA basada en la nube con Conectividad Saliente Exclusiva (Outbound-only Tunnels), ocultando la superficie de ataque de internet." }
+                ],
+                successDefense: "¡Impecable! La gran diferencia entre VPN y ZTNA moderno es que la arquitectura ZTNA usa conexiones inversas hacia un broker en la nube. Al no tener puertos abiertos escuchando en la red pública (`Dark Perimeter`), los atacantes no tienen una interfaz donde lanzar exploits de pre-autenticación."
+            }
+        };
+
+        let currentScenarioId = 1;
+
+        // Cambiar entre escenarios del panel lateral
+        function selectScenario(id) {
+            currentScenarioId = id;
+            const s = scenarios[id];
+
+            // Actualizar clases de los botones laterales
+            for(let i=1; i<=5; i++) {
+                const btn = document.getElementById(`btn-esc-${i}`);
+                if(i === id) {
+                    btn.className = "w-full text-left p-3 rounded-lg bg-cyan-900/40 border border-cyan-500 text-cyan-300 font-medium transition text-sm";
+                } else {
+                    btn.className = "w-full text-left p-3 rounded-lg bg-gray-700/30 border border-transparent text-gray-400 hover:bg-gray-700/50 transition text-sm";
+                }
+            }
+
+            // Actualizar textos informativos
+            document.getElementById("scenario-title").innerText = s.title;
+            document.getElementById("mitre-tag").innerText = s.mitre;
+            document.getElementById("scenario-description").innerText = s.description;
+            document.getElementById("vector-tag").innerText = s.vector;
+            document.getElementById("complexity-tag").innerText = s.complexity;
+            document.getElementById("complexity-tag").className = s.complexityColor;
+
+            // Limpiar consolas y estados
+            document.getElementById("red-terminal").innerHTML = `<div>[i] Entorno listo para la emulación del ataque. Elige los parámetros ofensivos...</div>`;
+            document.getElementById("blue-terminal").innerHTML = `<div class="text-gray-600">[i] Escuchando eventos perimetrales en puertos logísticos...</div>`;
+            document.getElementById("attack-status").innerText = "Estado: Listo para ejecutar";
+            
+            const btnAttack = document.getElementById("btn-attack");
+            btnAttack.disabled = false;
+            btnAttack.className = "bg-red-600 hover:bg-red-500 text-white font-bold px-6 py-2 rounded text-xs transition uppercase tracking-wider";
+
+            // Renderizar nuevas opciones de mitigación para el Blue Team
+            renderMitigations(s.mitigations);
+        }
+
+        // Renderizar dinámicamente las opciones de mitigación del escenario actual
+        function renderMitigations(options) {
+            const container = document.getElementById("mitigation-options");
+            container.innerHTML = "";
+            
+            options.forEach(opt => {
+                const div = document.createElement("div");
+                div.className = "flex items-start gap-2 bg-gray-700/20 p-2 rounded border border-gray-700 hover:bg-gray-700/40 transition";
+                div.innerHTML = `
+                    <input type="radio" name="mitigation-grp" id="${opt.id}" value="${opt.id}" class="mt-1 cursor-pointer" onclick="enableMitigateButton()">
+                    <label Kakao for="${opt.id}" class="text-xs text-gray-300 cursor-pointer select-none">${opt.text}</label>
+                `;
+                container.appendChild(div);
+            });
+
+            // Deshabilitar botón de aplicar mitigación al renderizar nuevo escenario
+            const btnMitigate = document.getElementById("btn-mitigate");
+            btnMitigate.disabled = true;
+            btnMitigate.className = "mt-4 w-full bg-gray-700 text-gray-500 font-bold px-4 py-2 rounded text-xs cursor-not-allowed uppercase tracking-wider transition";
+        }
+
+        function enableMitigateButton() {
+            const btnMitigate = document.getElementById("btn-mitigate");
+            btnMitigate.disabled = false;
+            btnMitigate.className = "mt-4 w-full bg-blue-600 hover:bg-blue-500 text-white font-bold px-4 py-2 rounded text-xs uppercase tracking-wider transition shadow-lg cursor-pointer";
+        }
+
+        // Simular ejecución secuencial del ataque (Red Team) e ingesta de logs en tiempo real (Blue Team)
+        function executeAttack() {
+            const s = scenarios[currentScenarioId];
+            const redTerminal = document.getElementById("red-terminal");
+            const blueTerminal = document.getElementById("blue-terminal");
+            const btnAttack = document.getElementById("btn-attack");
+            const statusLabel = document.getElementById("attack-status");
+
+            // Deshabilitar botón durante el ataque simulado
+            btnAttack.disabled = true;
+            btnAttack.className = "bg-gray-700 text-gray-500 font-bold px-6 py-2 rounded text-xs cursor-not-allowed uppercase tracking-wider";
+            statusLabel.innerText = "Estado: Lanzando explotación de vectores de autenticación...";
+
+            redTerminal.innerHTML = "";
+            blueTerminal.innerHTML = "";
+
+            // Inyectar logs ofensivos de forma secuencial
+            s.redLogs.forEach((log, index) => {
+                setTimeout(() => {
+                    let logClass = "text-green-400";
+                    if (log.includes("[CRÍTICO]")) logClass = "text-red-500 font-bold animate-pulse";
+                    if (log.includes("[!]")) logClass = "text-amber-400";
+                    
+                    redTerminal.innerHTML += `<div class="${logClass}">${log}</div>`;
+                    redTerminal.scrollTop = redTerminal.scrollHeight;
+                }, index * 400); // Retraso de simulación de consola real
+            });
+
+            // Inyectar logs defensivos en paralelo
+            setTimeout(() => {
+                s.blueLogs.forEach((log, index) => {
+                    setTimeout(() => {
+                        let logClass = "text-gray-400";
+                        if (log.includes("ALERT") || log.includes("CRITICAL_ANOMALY")) logClass = "text-red-400 font-bold";
+                        
+                        blueTerminal.innerHTML += `<div class="${logClass}">${log}</div>`;
+                        blueTerminal.scrollTop = blueTerminal.scrollHeight;
+                    }, index * 500);
+                });
+                statusLabel.innerText = "Estado: Explotación Exitosa. Brecha detectada en SIEM. Aplica la contramedida correspondiente.";
+            }, 600);
+        }
+
+        // Lógica de validación del control del Blue Team
+        function applyMitigation() {
+            const s = scenarios[currentScenarioId];
+            const selectedOpt = document.querySelector('input[name="mitigation-grp"]:checked');
+            const blueTerminal = document.getElementById("blue-terminal");
+
+            if (!selectedOpt) return;
+
+            if (selectedOpt.value.includes("correct")) {
+                blueTerminal.innerHTML += `
+                    <div class="mt-4 p-2 bg-blue-950 text-blue-300 border border-blue-800 rounded">
+                        <strong>[DEFENSA CONTROL EXITOSO]:</strong> ${s.successDefense}
+                    </div>
+                `;
+            } else {
+                blueTerminal.innerHTML += `
+                    <div class="mt-4 p-2 bg-red-950 text-red-300 border border-red-800 rounded">
+                        <strong>[ALERTA DE SEGURIDAD]:</strong> Contramedida ineficaz para este vector específico. El exploit sigue activo en la memoria o los logs siguen mostrando bypass de autenticación. Reevalúa los controles criptográficos del escenario.
+                    </div>
+                `;
+            }
+            blueTerminal.scrollTop = blueTerminal.scrollHeight;
+        }
+
+        // Inicializar el primer escenario por defecto al cargar la página
+        window.onload = function() {
+            selectScenario(1);
+        };
+    </script>
+</body>
+</html>
